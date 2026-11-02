@@ -1,0 +1,9 @@
+Package: com.twoyears666.virtualpad
+Name: VirtualPad
+Version: 0.1.0
+Architecture: iphoneos-arm64
+Description: Virtual pad overlay tweak for jailbroken iOS (rootless)
+Maintainer: twoyears666
+Author: twoyears666
+Section: Tweaks
+Depends: mobilesubstrate

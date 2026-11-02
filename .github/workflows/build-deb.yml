@@ -1,0 +1,118 @@
+# === 编译 rootless deb —— 用 Theos 打包，产出可直接安装到越狱设备的 .deb ===
+# 说明：rootless（无根）方案，包内路径统一落在 /var/jb，适用于 iOS 15+ 的 Dopamine/palera1n 环境
+name: Build Rootless DEB
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - 'feat/**'
+      - 'fix/**'
+  pull_request:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  THEOS: ${{ github.workspace }}/.theos-root
+
+jobs:
+  build:
+    name: 编译打包
+    runs-on: macos-14
+    steps:
+      # === 准备环境 —— Theos 需要 ldid 签名与 dpkg-deb 打包 ===
+      - name: 检出仓库代码
+        uses: actions/checkout@v4
+
+      - name: 恢复 Theos 缓存
+        id: theos-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.THEOS }}
+          key: theos-${{ runner.os }}-${{ runner.arch }}-v1
+
+      - name: 安装打包依赖
+        run: brew install dpkg xz
+
+      - name: 安装签名工具 ldid
+        run: |
+          if command -v ldid >/dev/null 2>&1; then
+            echo "ldid 已可用，跳过安装"
+            exit 0
+          fi
+          if brew install ldid; then
+            echo "ldid 已通过 Homebrew 安装"
+            exit 0
+          fi
+          mkdir -p "$HOME/.local/bin"
+          if [ "$(uname -m)" = "arm64" ]; then ldid_asset=ldid_macosx_arm64; else ldid_asset=ldid_macosx_x86_64; fi
+          curl -fsSL "https://github.com/ProcursusTeam/ldid/releases/latest/download/${ldid_asset}" -o "$HOME/.local/bin/ldid"
+          chmod +x "$HOME/.local/bin/ldid"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: 拉取 Theos
+        run: |
+          if [ ! -d "$THEOS/makefiles" ]; then
+            git clone --recursive --depth 1 https://github.com/theos/theos.git "$THEOS"
+          fi
+          if [ ! -d "$THEOS/sdks" ] || [ -z "$(ls -A "$THEOS/sdks")" ]; then
+            git clone --depth 1 https://github.com/theos/sdks.git "$THEOS/sdks"
+          fi
+
+      - name: 校验构建环境
+        run: |
+          command -v make
+          command -v dpkg-deb
+          command -v ldid
+          ls "$THEOS/makefiles" | head -5
+
+      # === 编译打包 —— rootless 方案强制走 FINALPACKAGE，产物进 packages/ ===
+      - name: 编译 rootless deb
+        run: |
+          set -o pipefail
+          make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless 2>&1 | tee build.log
+
+      - name: 校验 deb 包结构
+        run: |
+          deb=$(ls packages/*.deb | head -1)
+          echo "产物：$deb"
+          dpkg-deb -I "$deb"
+          dpkg-deb -c "$deb"
+          if ! dpkg-deb -c "$deb" | grep -q "/var/jb/"; then
+            echo "::error::包内未发现 /var/jb 路径，不是合法的 rootless 包"
+            exit 1
+          fi
+
+      - name: 上传 deb 产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: VirtualPad-DEB
+          path: packages/*.deb
+          if-no-files-found: error
+          retention-days: 30
+
+      # === 失败兜底 —— 把编译日志单独留存，便于定位报错 ===
+      - name: 汇总编译错误（失败时）
+        if: failure()
+        run: |
+          mkdir -p build-log
+          grep -n -i -E "error|fatal|failed|undefined" build.log | tail -n 200 > build-log/errors.txt || echo "未匹配到错误行" > build-log/errors.txt
+
+      - name: 上传编译日志（失败时）
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build-log/
+          if-no-files-found: warn
+          retention-days: 7
