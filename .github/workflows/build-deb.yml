@@ -88,7 +88,7 @@ jobs:
           echo "产物：$deb"
           dpkg-deb -I "$deb"
           dpkg-deb -c "$deb"
-          if ! dpkg-deb -c "$deb" | grep -q "/var/jb/"; then
+          if ! dpkg-deb -c "$deb" | grep -q "var/jb/"; then
             echo "::error::包内未发现 /var/jb 路径，不是合法的 rootless 包"
             exit 1
           fi
