@@ -2,8 +2,9 @@ Package: com.twoyears666.virtualpad
 Name: VirtualPad
 Version: 0.1.0
 Architecture: iphoneos-arm64
-Description: Virtual pad overlay tweak for jailbroken iOS (rootless)
+Description: 屏幕虚拟按键插件：控制中心开关、按键/摇杆自定义布局，仅在前台 App 内显示
 Maintainer: twoyears666
 Author: twoyears666
 Section: Tweaks
-Depends: mobilesubstrate
+Depends: mobilesubstrate, firmware (>= 14.0)
+Recommends: com.opa334.ccsupport
