@@ -156,7 +156,7 @@ BOOL VPIsEnabled(void) {
 		(__bridge CFStringRef)VPDomainName,
 		kCFPreferencesCurrentUser,
 		kCFPreferencesAnyHost);
-	return value ? value.boolValue : YES;
+	return value ? value.boolValue : NO;
 }
 
 void VPSetEnabled(BOOL enabled) {
