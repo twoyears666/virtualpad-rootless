@@ -30,7 +30,6 @@ VirtualPadPrefs_FILES = \
 	$(THEOS_PROJECT_DIR)/Sources/VPModel.m
 VirtualPadPrefs_CFLAGS = -fobjc-arc $(VP_INCLUDES) -I$(THEOS_PROJECT_DIR)/headers
 VirtualPadPrefs_FRAMEWORKS = UIKit Foundation
-VirtualPadPrefs_PRIVATE_FRAMEWORKS = Preferences
 VirtualPadPrefs_RESOURCE_DIRS = prefs/Resources
 VirtualPadPrefs_LDFLAGS = -Wl,-undefined,dynamic_lookup
 
