@@ -115,7 +115,15 @@ static void VPRefreshNotificationCallback(CFNotificationCenterRef center,
 	if (_window) return;
 
 	UIWindowScene *scene = [self activeWindowScene];
-	CGRect frame = scene ? scene.coordinateSpace.bounds : [UIScreen mainScreen].bounds;
+	CGRect frame;
+	if (scene) {
+		frame = scene.coordinateSpace.bounds;
+	} else {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+		frame = [UIScreen mainScreen].bounds;
+#pragma clang diagnostic pop
+	}
 
 	_window = [[VPOverlayWindow alloc] initWithFrame:frame];
 	if (@available(iOS 13.0, *)) {

@@ -7,15 +7,16 @@ typedef struct __IOHIDEvent *IOHIDEventRef;
 typedef double IOHIDFloat;
 
 // IOKit / BackBoardServices 按需动态绑定，避免依赖私有头文件
+// 注意：函数指针里的 options 参数直接用 uint32_t 代替 IOOptionBits，避免额外引入 IOKit 类型
 static IOHIDEventRef (*VPIOHIDEventCreateDigitizerEvent)(CFAllocatorRef, uint64_t, uint32_t, uint32_t,
 														 uint32_t, uint32_t, uint32_t, IOHIDFloat, IOHIDFloat,
 														 IOHIDFloat, IOHIDFloat, IOHIDFloat, Boolean, Boolean,
-														 IOOptionBits);
+														 uint32_t);
 static IOHIDEventRef (*VPIOHIDEventCreateDigitizerFingerEvent)(CFAllocatorRef, uint64_t, uint32_t,
 															   uint32_t, uint32_t, IOHIDFloat, IOHIDFloat,
 															   IOHIDFloat, IOHIDFloat, IOHIDFloat, Boolean,
-															   Boolean, IOOptionBits);
-static void (*VPIOHIDEventAppendEvent)(IOHIDEventRef, IOHIDEventRef, IOOptionBits);
+															   Boolean, uint32_t);
+static void (*VPIOHIDEventAppendEvent)(IOHIDEventRef, IOHIDEventRef, uint32_t);
 static void (*VPIOHIDEventSetIntegerValue)(IOHIDEventRef, uint32_t, int);
 static void (*VPIOHIDEventSetFloatValue)(IOHIDEventRef, uint32_t, IOHIDFloat);
 static void (*VPIOHIDEventSetSenderID)(IOHIDEventRef, uint64_t);
@@ -46,8 +47,10 @@ static void VPInitializeHIDIfNeeded(void) {
 }
 
 static uint32_t VPWindowContextID(void) {
-	UIWindow *window = [UIApplication sharedApplication].keyWindow
-		?: [UIApplication sharedApplication].windows.firstObject;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+	UIWindow *window = [UIApplication sharedApplication].windows.firstObject;
+#pragma clang diagnostic pop
 	SEL selector = NSSelectorFromString(@"_contextId");
 	if (window && [window respondsToSelector:selector]) {
 		return ((uint32_t (*)(id, SEL))objc_msgSend)(window, selector);

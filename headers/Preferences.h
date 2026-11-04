@@ -23,7 +23,7 @@ typedef NS_ENUM(NSInteger, PSListCellType) {
 - (id)propertyForKey:(NSString *)key;
 @end
 
-@interface PSListController : UIViewController <UITableViewDataSource, UITableViewDelegate>
+@interface PSListController : UIViewController
 - (id)initForContentSize:(CGSize)size;
 - (void)reloadSpecifiers;
 @end
